@@ -41,14 +41,10 @@
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-        .lab-button:hover, .lab-button.active {
-            background-color: #3a7bc8;
         }
         .schedule-grid {
             display: grid;
-            grid-template-columns: auto repeat(5, 1fr);
+            grid-template-columns: repeat(6, 1fr); /* 5 dias + 1 coluna para horário */
             gap: 1px;
             background-color: #ddd;
             border: 1px solid #ddd;
@@ -62,10 +58,6 @@
             font-weight: bold;
             background-color: #e6f2ff;
         }
-        .time-slot {
-            font-weight: bold;
-            background-color: #f0f8ff;
-        }
         .schedule-item {
             cursor: pointer;
             transition: background-color 0.3s ease;
@@ -73,40 +65,17 @@
         .schedule-item:hover {
             background-color: #e6f2ff;
         }
-        .schedule-item.booked {
-            background-color: #aed6f1;
-        }
-        .schedule-item.unavailable {
-            background-color: #f0f0f0;
-            cursor: not-allowed;
-        }
         .booking-form {
             margin-top: 20px;
             background-color: white;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: none;
         }
         .booking-form input, .booking-form select {
             width: 100%;
             padding: 10px;
             margin-bottom: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        .booking-form button {
-            background-color: #4caf50;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .booking-form button:hover {
-            background-color: #45a049;
-        }
-        .date-selector {
-            margin-bottom: 20px;
         }
     </style>
 </head>
@@ -126,7 +95,7 @@
             <button class="lab-button" data-lab="informatica">Laboratório de Informática</button>
         </div>
         <div class="schedule-grid" id="scheduleGrid"></div>
-        <div class="booking-form" id="bookingForm" style="display:none;">
+        <div class="booking-form" id="bookingForm">
             <h3>Reservar Horário</h3>
             <input type="text" id="teacherName" placeholder="Nome do Professor">
             <input type="text" id="discipline" placeholder="Disciplina">
@@ -146,13 +115,9 @@
     <script>
         const labs = ['espacomaker', 'salaleitura', 'biologia', 'informatica'];
         let currentLab = 'espacomaker';
-        const timeSlots = [
-            '07:15 - 08:00', '08:00 - 08:45', '08:45 - 09:30', '09:30 - 09:45', '09:45 - 10:30', '10:30 - 11:15',
-            '12:00 - 13:00', // Intervalo sem atendimento
-            '13:15 - 14:00', '14:00 - 14:45', '14:45 - 15:30', '15:30 - 15:45', '15:45 - 16:30', '16:30 - 17:15'
-        ];
-        const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
         const bookings = {};
+        const timeSlots = ['07:15 - 08:00', '08:00 - 08:45', '08:45 - 09:30', '09:30 - 09:45', '09:45 - 10:30', '10:30 - 11:15', '12:00 - 13:00', '13:15 - 14:00', '14:00 - 14:45', '14:45 - 15:30', '15:30 - 15:45', '15:45 - 16:30', '16:30 - 17:15'];
+        const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
         let currentWeekStart = new Date();
 
         function initializeBookings() {
@@ -171,7 +136,7 @@
             grid.innerHTML = '';
 
             // Add header row with dates
-            grid.appendChild(createGridItem('Horário', 'schedule-header'));
+            grid.appendChild(createGridItem('Horário', 'schedule-header')); // Coluna de horário
             for (let i = 0; i < 5; i++) {
                 const date = new Date(currentWeekStart);
                 date.setDate(date.getDate() + i);
@@ -181,25 +146,16 @@
 
             // Add time slots and bookings
             timeSlots.forEach(slot => {
-                grid.appendChild(createGridItem(slot, 'time-slot'));
+                grid.appendChild(createGridItem(slot, 'schedule-header'));
                 for (let i = 0; i < 5; i++) {
                     const date = new Date(currentWeekStart);
                     date.setDate(date.getDate() + i);
                     const dateKey = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
                     
-                    if (slot === '12:00 - 13:00') {
-                        const item = createGridItem('Sem Atendimento', 'schedule-item unavailable');
-                        grid.appendChild(item);
-                    } else if (slot === '09:30 - 09:45' || slot === '15:30 - 15:45') {
-                        const item = createGridItem('Recreio', 'schedule-item unavailable');
-                        grid.appendChild(item);
-                    } else {
-                        const booking = bookings[currentLab]?.[dateKey]?.[slot];
-                        const item = createGridItem(booking ? `${booking.teacherName}<br>${booking.discipline}<br>${booking.className}` : 'Disponível', 'schedule-item');
-                        if (booking) item.classList.add('booked');
-                        item.addEventListener('click', () => showBookingForm(dateKey, slot));
-                        grid.appendChild(item);
-                    }
+                    const booking = bookings[currentLab]?.[dateKey]?.[slot];
+                    const item = createGridItem(booking ? `${booking.teacherName}<br>${booking.discipline}<br>${booking.className}` : 'Disponível', 'schedule-item');
+                    item.addEventListener('click', () => showBookingForm(dateKey, slot));
+                    grid.appendChild(item);
                 }
             });
         }
@@ -212,11 +168,47 @@
         }
 
         function showBookingForm(dateKey, slot) {
-            if (slot === '12:00 - 13:00' || slot === '09:30 - 09:45' || slot === '15:30 - 15:45') return;
             const form = document.getElementById('bookingForm');
             form.style.display = 'block';
-            form.dataset.dateKey = dateKey;
-            form.dataset.slot = slot;
+            form.dataset.dateKey = dateKey; // Armazena a data selecionada
+            form.dataset.slot = slot; // Armazena o slot selecionado
         }
 
-        function switchLab(lab
+        function switchLab(lab) {
+            currentLab = lab;
+            updateScheduleGrid();
+        }
+
+        document.querySelectorAll('.lab-button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                switchLab(e.target.dataset.lab);
+            });
+        });
+
+        document.getElementById('confirmBooking').addEventListener('click', () => {
+            const teacherName = document.getElementById('teacherName').value;
+            const discipline = document.getElementById('discipline').value;
+            const className = document.getElementById('className').value;
+            const activityType = document.getElementById('activityType').value;
+            const dateKey = document.getElementById('bookingForm').dataset.dateKey;
+            const slot = document.getElementById('bookingForm').dataset.slot;
+
+            if (teacherName && discipline && className && activityType) {
+                if (!bookings[currentLab][dateKey]) {
+                    bookings[currentLab][dateKey] = {};
+                }
+                bookings[currentLab][dateKey][slot] = { teacherName, discipline, className, activityType };
+                alert('Reserva confirmada com sucesso!');
+                document.getElementById('bookingForm').style.display = 'none';
+                updateScheduleGrid();
+            } else {
+                alert('Por favor, preencha todos os campos.');
+            }
+        });
+
+        initializeBookings();
+        document.getElementById('weekStart').valueAsDate = new Date();
+        updateScheduleGrid();
+    </script>
+</body>
+</html>
