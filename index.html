@@ -1,0 +1,258 @@
+<html><head><base href="https://labagenda.edu.br/">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agenda de Espaços Escolares</title>
+<style>
+  body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f0f8ff;
+    color: #333;
+  }
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  header {
+    background-color: #4a90e2;
+    color: white;
+    text-align: center;
+    padding: 20px 0;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+  h1 {
+    margin: 0;
+    font-size: 2.2em;
+  }
+  .lab-selector {
+    display: flex;
+    justify-content: space-around;
+    margin: 20px 0;
+  }
+  .lab-button {
+    padding: 10px 15px;
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  .lab-button:hover, .lab-button.active {
+    background-color: #3a7bc8;
+  }
+  .schedule-grid {
+    display: grid;
+    grid-template-columns: auto repeat(5, 1fr);
+    gap: 1px;
+    background-color: #ddd;
+    border: 1px solid #ddd;
+  }
+  .schedule-header, .time-slot, .schedule-item {
+    padding: 10px;
+    background-color: white;
+    text-align: center;
+  }
+  .schedule-header {
+    font-weight: bold;
+    background-color: #e6f2ff;
+  }
+  .time-slot {
+    font-weight: bold;
+    background-color: #f0f8ff;
+  }
+  .schedule-item {
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  .schedule-item:hover {
+    background-color: #e6f2ff;
+  }
+  .schedule-item.booked {
+    background-color: #aed6f1;
+  }
+  .schedule-item.unavailable {
+    background-color: #f0f0f0;
+    cursor: not-allowed;
+  }
+  .booking-form {
+    margin-top: 20px;
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  }
+  .booking-form input, .booking-form select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  .booking-form button {
+    background-color: #4caf50;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .booking-form button:hover {
+    background-color: #45a049;
+  }
+  .date-selector {
+    margin-bottom: 20px;
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Agenda de Espaços Escolares</h1>
+  </header>
+  <div class="container">
+    <div class="date-selector">
+      <label for="weekStart">Selecione a semana inicial:</label>
+      <input type="date" id="weekStart" onchange="updateSchedule()">
+    </div>
+    <div class="lab-selector">
+      <button class="lab-button active" data-lab="espacomaker">Espaço Maker</button>
+      <button class="lab-button" data-lab="salaleitura">Sala de Leitura</button>
+      <button class="lab-button" data-lab="biologia">Laboratório de Biologia</button>
+      <button class="lab-button" data-lab="informatica">Laboratório de Informática</button>
+    </div>
+    <div class="schedule-grid" id="scheduleGrid"></div>
+    <div class="booking-form" id="bookingForm" style="display:none;">
+      <h3>Reservar Horário</h3>
+      <input type="text" id="teacherName" placeholder="Nome do Professor">
+      <input type="text" id="discipline" placeholder="Disciplina">
+      <input type="text" id="className" placeholder="Turma">
+      <select id="activityType">
+        <option value="">Selecione o tipo de atividade</option>
+        <option value="aula">Aula Prática</option>
+        <option value="experimento">Experimento</option>
+        <option value="pesquisa">Pesquisa</option>
+        <option value="trabalho">Trabalho</option>
+        <option value="leitura">Leitura</option>
+      </select>
+      <button id="confirmBooking">Confirmar Reserva</button>
+    </div>
+  </div>
+
+  <script>
+    const labs = ['espacomaker', 'salaleitura', 'biologia', 'informatica'];
+    let currentLab = 'espacomaker';
+    const timeSlots = [
+      '07:15 - 08:00', '08:00 - 08:45', '08:45 - 09:30', '09:30 - 09:45', '09:45 - 10:30', '10:30 - 11:15',
+      '12:00 - 13:00', // Intervalo sem atendimento
+      '13:15 - 14:00', '14:00 - 14:45', '14:45 - 15:30', '15:30 - 15:45', '15:45 - 16:30', '16:30 - 17:15'
+    ];
+    const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
+    const bookings = {};
+    let currentWeekStart = new Date();
+
+    function initializeBookings() {
+      labs.forEach(lab => {
+        bookings[lab] = {};
+      });
+    }
+
+    function updateSchedule() {
+      currentWeekStart = new Date(document.getElementById('weekStart').value);
+      updateScheduleGrid();
+    }
+
+    function updateScheduleGrid() {
+      const grid = document.getElementById('scheduleGrid');
+      grid.innerHTML = '';
+
+      // Add header row with dates
+      grid.appendChild(createGridItem('Horário', 'schedule-header'));
+      for (let i = 0; i < 5; i++) {
+        const date = new Date(currentWeekStart);
+        date.setDate(date.getDate() + i);
+        const dateStr = `${days[i]}<br>${date.getDate()}/${date.getMonth() + 1}`;
+        grid.appendChild(createGridItem(dateStr, 'schedule-header'));
+      }
+
+      // Add time slots and bookings
+      timeSlots.forEach(slot => {
+        grid.appendChild(createGridItem(slot, 'time-slot'));
+        for (let i = 0; i < 5; i++) {
+          const date = new Date(currentWeekStart);
+          date.setDate(date.getDate() + i);
+          const dateKey = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+          
+          if (slot === '12:00 - 13:00') {
+            const item = createGridItem('Sem Atendimento', 'schedule-item unavailable');
+            grid.appendChild(item);
+          } else if (slot === '09:30 - 09:45' || slot === '15:30 - 15:45') {
+            const item = createGridItem('Recreio', 'schedule-item unavailable');
+            grid.appendChild(item);
+          } else {
+            const booking = bookings[currentLab]?.[dateKey]?.[slot];
+            const item = createGridItem(booking ? `${booking.teacherName}<br>${booking.discipline}<br>${booking.className}` : 'Disponível', 'schedule-item');
+            if (booking) item.classList.add('booked');
+            item.addEventListener('click', () => showBookingForm(dateKey, slot));
+            grid.appendChild(item);
+          }
+        }
+      });
+    }
+
+    function createGridItem(content, className) {
+      const div = document.createElement('div');
+      div.className = className;
+      div.innerHTML = content;
+      return div;
+    }
+
+    function showBookingForm(dateKey, slot) {
+      if (slot === '12:00 - 13:00' || slot === '09:30 - 09:45' || slot === '15:30 - 15:45') return;
+      const form = document.getElementById('bookingForm');
+      form.style.display = 'block';
+      form.dataset.dateKey = dateKey;
+      form.dataset.slot = slot;
+    }
+
+    function switchLab(lab) {
+      currentLab = lab;
+      document.querySelectorAll('.lab-button').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lab === lab);
+      });
+      updateScheduleGrid();
+    }
+
+    document.querySelectorAll('.lab-button').forEach(button => {
+      button.addEventListener('click', (e) => switchLab(e.target.dataset.lab));
+    });
+
+    document.getElementById('confirmBooking').addEventListener('click', () => {
+      const form = document.getElementById('bookingForm');
+      const dateKey = form.dataset.dateKey;
+      const slot = form.dataset.slot;
+      const teacherName = document.getElementById('teacherName').value;
+      const discipline = document.getElementById('discipline').value;
+      const className = document.getElementById('className').value;
+      const activityType = document.getElementById('activityType').value;
+
+      if (teacherName && discipline && className && activityType) {
+        if (!bookings[currentLab][dateKey]) {
+          bookings[currentLab][dateKey] = {};
+        }
+        bookings[currentLab][dateKey][slot] = { teacherName, discipline, className, activityType };
+        updateScheduleGrid();
+        form.style.display = 'none';
+        alert('Reserva confirmada com sucesso!');
+      } else {
+        alert('Por favor, preencha todos os campos.');
+      }
+    });
+
+    initializeBookings();
+    document.getElementById('weekStart').valueAsDate = new Date();
+    updateScheduleGrid();
+  </script>
+</body>
+</html>
