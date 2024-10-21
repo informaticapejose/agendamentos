@@ -124,10 +124,12 @@
             labs.forEach(lab => {
                 bookings[lab] = {};
             });
+            console.log('Bookings inicializados:', bookings);
         }
 
         function updateSchedule() {
             currentWeekStart = new Date(document.getElementById('weekStart').value);
+            console.log('Semana inicial atualizada:', currentWeekStart);
             updateScheduleGrid();
         }
 
@@ -146,6 +148,7 @@
 
             // Fetch bookings from Google Sheets
             fetchBookings().then(bookingsData => {
+                console.log('Dados de agendamento recebidos:', bookingsData);
                 timeSlots.forEach(slot => {
                     grid.appendChild(createGridItem(slot, 'schedule-header'));
                     for (let i = 0; i < 5; i++) {
@@ -155,7 +158,10 @@
                         
                         const booking = bookingsData[dateKey]?.[slot];
                         const item = createGridItem(booking ? `${booking.teacherName}<br>${booking.discipline}<br>${booking.className}` : 'Disponível', 'schedule-item');
-                        item.addEventListener('click', () => showBookingForm(dateKey, slot));
+                        item.addEventListener('click', () => {
+                            console.log('Slot clicado:', { dateKey, slot });
+                            showBookingForm(dateKey, slot);
+                        });
                         grid.appendChild(item);
                     }
                 });
@@ -174,10 +180,12 @@
             form.style.display = 'block';
             form.dataset.dateKey = dateKey; // Armazena a data selecionada
             form.dataset.slot = slot; // Armazena o slot selecionado
+            console.log('Formulário de agendamento exibido para:', { dateKey, slot });
         }
 
         function switchLab(lab) {
             currentLab = lab;
+            console.log('Laboratório alterado para:', currentLab);
             updateScheduleGrid();
         }
 
@@ -195,21 +203,12 @@
             const dateKey = document.getElementById('bookingForm').dataset.dateKey;
             const slot = document.getElementById('bookingForm').dataset.slot;
 
+            console.log('Tentativa de reserva com os dados:', { teacherName, discipline, className, activityType, dateKey, slot });
+
             if (teacherName && discipline && className && activityType) {
                 if (!bookings[currentLab][dateKey]) {
                     bookings[currentLab][dateKey] = {};
                 }
                 bookings[currentLab][dateKey][slot] = { teacherName, discipline, className, activityType };
                 alert('Reserva confirmada com sucesso!');
-                document.getElementById('bookingForm').style.display = 'none';
-                updateScheduleGrid();
-            } else {
-                alert('Por favor, preencha todos os campos.');
-            }
-        });
-
-        function fetchBookings() {
-            return fetch('https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec') // Substitua 'YOUR_SCRIPT_ID' pelo seu ID de script
-                .then(response => response.json())
-                .then(data => {
-                   
+               
