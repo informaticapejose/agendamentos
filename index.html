@@ -112,7 +112,7 @@
         </div>
     </div>
 
-    <script>
+    <script defer>
         const labs = ['espacomaker', 'salaleitura', 'biologia', 'informatica'];
         let currentLab = 'espacomaker';
         const bookings = {};
@@ -192,21 +192,4 @@
             const dateKey = document.getElementById('bookingForm').dataset.dateKey;
             const slot = document.getElementById('bookingForm').dataset.slot;
 
-            if (teacherName && discipline && className && activityType) {
-                if (!bookings[currentLab][dateKey]) {
-                    bookings[currentLab][dateKey] = {};
-                }
-                bookings[currentLab][dateKey][slot] = { teacherName, discipline, className, activityType };
-                alert('Reserva confirmada com sucesso!');
-                document.getElementById('bookingForm').style.display = 'none';
-                updateScheduleGrid();
-            } else {
-                alert('Por favor, preencha todos os campos.');
-            }
-        });
-
-        // Chamada inicial para preparar os bookings
-        initializeBookings();
-    </script>
-</body>
-</html>
+            if (teacherName && discipline && className && activityType)
