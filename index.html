@@ -3,211 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agenda de Espaços Escolares</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f0f8ff;
-            color: #333;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        header {
-            background-color: #4a90e2;
-            color: white;
-            text-align: center;
-            padding: 20px 0;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            margin: 0;
-            font-size: 2.2em;
-        }
-        .lab-selector {
-            display: flex;
-            justify-content: space-around;
-            margin: 20px 0;
-        }
-        .lab-button {
-            padding: 10px 15px;
-            background-color: #4a90e2;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .schedule-grid {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 1px;
-            background-color: #ddd;
-            border: 1px solid #ddd;
-        }
-        .schedule-header, .schedule-item {
-            padding: 10px;
-            background-color: white;
-            text-align: center;
-        }
-        .schedule-header {
-            font-weight: bold;
-            background-color: #e6f2ff;
-        }
-        .schedule-item {
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-        .schedule-item:hover {
-            background-color: #e6f2ff;
-        }
-        .booking-form {
-            margin-top: 20px;
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            display: none;
-        }
-        .booking-form input, .booking-form select {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-        }
-    </style>
-</head>
-<body>
-    <header>
-        <h1>Agenda de Espaços Escolares</h1>
-    </header>
-    <div class="container">
-        <div class="date-selector">
-            <label for="weekStart">Selecione a semana inicial:</label>
-            <input type="date" id="weekStart" onchange="updateSchedule()">
-        </div>
-        <div class="lab-selector">
-            <button class="lab-button active" data-lab="espacomaker">Espaço Maker</button>
-            <button class="lab-button" data-lab="salaleitura">Sala de Leitura</button>
-            <button class="lab-button" data-lab="biologia">Laboratório de Biologia</button>
-            <button class="lab-button" data-lab="informatica">Laboratório de Informática</button>
-        </div>
-        <div class="schedule-grid" id="scheduleGrid"></div>
-        <div class="booking-form" id="bookingForm">
-            <h3>Reservar Horário</h3>
-            <input type="text" id="teacherName" placeholder="Nome do Professor" required>
-            <input type="text" id="discipline" placeholder="Disciplina" required>
-            <input type="text" id="className" placeholder="Turma" required>
-            <select id="activityType" required>
-                <option value="">Selecione o tipo de atividade</option>
-                <option value="aula">Aula Prática</option>
-                <option value="experimento">Experimento</option>
-                <option value="pesquisa">Pesquisa</option>
-                <option value="trabalho">Trabalho</option>
-                <option value="leitura">Leitura</option>
-            </select>
-            <button id="confirmBooking">Confirmar Reserva</button>
-        </div>
-    </div>
-
+    <title>Agendamentos</title>
     <script>
-        const labs = ['espacomaker', 'salaleitura', 'biologia', 'informatica'];
-        let currentLab = 'espacomaker';
-        const bookings = {};
-        const timeSlots = ['07:15 - 08:00', '08:00 - 08:45', '08:45 - 09:30', '09:30 - 09:45', '09:45 - 10:30', '10:30 - 11:15', '12:00 - 13:00', '13:15 - 14:00', '14:00 - 14:45', '14:45 - 15:30', '15:30 - 15:45', '15:45 - 16:30', '16:30 - 17:15'];
-        const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
-        let currentWeekStart = new Date();
-
-        function initializeBookings() {
-            labs.forEach(lab => {
-                bookings[lab] = {};
-            });
-        }
-
-        function updateSchedule() {
-            currentWeekStart = new Date(document.getElementById('weekStart').value);
-            updateScheduleGrid();
-        }
-
-        function updateScheduleGrid() {
-            const grid = document.getElementById('scheduleGrid');
-            grid.innerHTML = '';
-
-            grid.appendChild(createGridItem('Horário', 'schedule-header')); // Coluna de horário
-            for (let i = 0; i < 5; i++) {
-                const date = new Date(currentWeekStart);
-                date.setDate(date.getDate() + i);
-                const dateStr = `${days[i]}<br>${date.getDate()}/${date.getMonth() + 1}`;
-                grid.appendChild(createGridItem(dateStr, 'schedule-header'));
-            }
-
-            timeSlots.forEach(slot => {
-                grid.appendChild(createGridItem(slot, 'schedule-header'));
-                for (let i = 0; i < 5; i++) {
-                    const date = new Date(currentWeekStart);
-                    date.setDate(date.getDate() + i);
-                    const dateKey = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
-                    
-                    const booking = bookings[currentLab]?.[dateKey]?.[slot];
-                    const item = createGridItem(booking ? `${booking.teacherName}<br>${booking.discipline}<br>${booking.className}` : 'Disponível', 'schedule-item');
-                    item.addEventListener('click', () => showBookingForm(dateKey, slot));
-                    grid.appendChild(item);
-                }
-            });
-        }
-
-        function createGridItem(content, className) {
-            const div = document.createElement('div');
-            div.className = className;
-            div.innerHTML = content;
-            return div;
-        }
-
-        function showBookingForm(dateKey, slot) {
-            const form = document.getElementById('bookingForm');
-            form.style.display = 'block';
-            form.dataset.dateKey = dateKey;
-            form.dataset.slot = slot;
-        }
-
-        function switchLab(lab) {
-            currentLab = lab;
-            updateScheduleGrid();
-        }
-
-        document.querySelectorAll('.lab-button').forEach(button => {
-            button.addEventListener('click', (e) => {
-                switchLab(e.target.dataset.lab);
-                document.querySelectorAll('.lab-button').forEach(btn => btn.classList.remove('active'));
-                e.target.classList.add('active');
-            });
-        });
-
-        document.getElementById('confirmBooking').addEventListener('click', () => {
-            const teacherName = document.getElementById('teacherName').value;
-            const discipline = document.getElementById('discipline').value;
-            const className = document.getElementById('className').value;
-            const activityType = document.getElementById('activityType').value;
-            const dateKey = document.getElementById('bookingForm').dataset.dateKey;
-            const slot = document.getElementById('bookingForm').dataset.slot;
-
-            if (teacherName && discipline && className && activityType) {
-                if (!bookings[currentLab][dateKey]) {
-                    bookings[currentLab][dateKey] = {};
-                }
-                bookings[currentLab][dateKey][slot] = { teacherName, discipline, className, activityType };
-                alert('Reserva confirmada com sucesso!');
-                document.getElementById('bookingForm').style.display = 'none';
-                updateScheduleGrid();
-            } else {
-                alert('Por favor, preencha todos os campos.');
-            }
-        });
-
-        // Carregar dados da planilha
-        function fetchBookings() {
+        document.addEventListener('DOMContentLoaded', function() {
             fetch('https://script.google.com/macros/s/AKfycbyOxGmbKWF_ZHIjJPnL-kwJbwPvfUm-BB-LnAEUfDehAthufjKuEDMB3eVAznZv8W5O/exec')
                 .then(response => response.json())
                 .then(data => {
-                    data.forEach(booking =>
+                    const agendamentosContainer = document.getElementById('agendamentos');
+                    if (data.length === 0) {
+                        agendamentosContainer.innerHTML = '<p>Nenhum agendamento encontrado.</p>';
+                    } else {
+                        let agendamentosHTML = '<ul>';
+                        data.forEach(row => {
+                            const hora = row[0]; // Hora na coluna 1A
+                            const agendamento = row[1]; // Agendamento na coluna 1B
+                            agendamentosHTML += `<li>${hora}: ${agendamento}</li>`;
+                        });
+                        agendamentosHTML += '</ul>';
+                        agendamentosContainer.innerHTML = agendamentosHTML;
+                    }
+                })
+                .catch(error => console.error('Erro:', error));
+        });
+    </script>
+</head>
+<body>
+    <h1>Agendamentos</h1>
+    <div id="agendamentos"></div>
+</body>
+</html>
