@@ -135,7 +135,7 @@
             const grid = document.getElementById('scheduleGrid');
             grid.innerHTML = '';
 
-            // Add header row with dates
+            // Adiciona a linha do cabeçalho com as datas
             grid.appendChild(createGridItem('Horário', 'schedule-header')); // Coluna de horário
             for (let i = 0; i < 5; i++) {
                 const date = new Date(currentWeekStart);
@@ -144,7 +144,7 @@
                 grid.appendChild(createGridItem(dateStr, 'schedule-header'));
             }
 
-            // Add time slots and bookings
+            // Adiciona slots de tempo e reservas
             timeSlots.forEach(slot => {
                 grid.appendChild(createGridItem(slot, 'schedule-header'));
                 for (let i = 0; i < 5; i++) {
@@ -206,9 +206,8 @@
             }
         });
 
-        initializeBookings();
-        document.getElementById('weekStart').valueAsDate = new Date();
-        updateScheduleGrid();
-    </script>
-</body>
-</html>
+        // Função para buscar os dados da planilha
+        function fetchData() {
+            fetch('https://script.google.com/macros/s/AKfycbyOxGmbKWF_ZHIjJPnL-kwJbwPvfUm-BB-LnAEUfDehAthufjKuEDMB3eVAznZv8W5O/exec')
+                .then(response => response.json())
+               
