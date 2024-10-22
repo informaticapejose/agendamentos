@@ -86,7 +86,7 @@
     <div class="container">
         <div class="date-selector">
             <label for="weekStart">Selecione a semana inicial:</label>
-            <input type="date" id="weekStart" onchange="updateSchedule()">
+            <input type="date" id="weekStart">
         </div>
         <div class="lab-selector">
             <button class="lab-button active" data-lab="espacomaker">Espaço Maker</button>
@@ -113,83 +113,106 @@
     </div>
 
     <script defer>
-        const labs = ['espacomaker', 'salaleitura', 'biologia', 'informatica'];
-        let currentLab = 'espacomaker';
-        const bookings = {};
-        const timeSlots = ['07:15 - 08:00', '08:00 - 08:45', '08:45 - 09:30', '09:30 - 09:45', '09:45 - 10:30', '10:30 - 11:15', '12:00 - 13:00', '13:15 - 14:00', '14:00 - 14:45', '14:45 - 15:30', '15:30 - 15:45', '15:45 - 16:30', '16:30 - 17:15'];
-        const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
-        let currentWeekStart = new Date();
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const labs = ['espacomaker', 'salaleitura', 'biologia', 'informatica'];
+            let currentLab = 'espacomaker';
+            const bookings = {};
+            const timeSlots = ['07:15 - 08:00', '08:00 - 08:45', '08:45 - 09:30', '09:30 - 09:45', '09:45 - 10:30', '10:30 - 11:15', '12:00 - 13:00', '13:15 - 14:00', '14:00 - 14:45', '14:45 - 15:30', '15:30 - 15:45', '15:45 - 16:30', '16:30 - 17:15'];
+            const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
+            let currentWeekStart = new Date();
 
-        function initializeBookings() {
-            labs.forEach(lab => {
-                bookings[lab] = {};
-            });
-            updateScheduleGrid(); // Atualiza a grade na inicialização
-        }
-
-        function updateSchedule() {
-            currentWeekStart = new Date(document.getElementById('weekStart').value);
-            updateScheduleGrid();
-        }
-
-        function updateScheduleGrid() {
-            const grid = document.getElementById('scheduleGrid');
-            grid.innerHTML = '';
-            grid.appendChild(createGridItem('Horário', 'schedule-header'));
-            
-            for (let i = 0; i < 5; i++) {
-                const date = new Date(currentWeekStart);
-                date.setDate(date.getDate() + i);
-                const dateStr = `${days[i]}<br>${date.getDate()}/${date.getMonth() + 1}`;
-                grid.appendChild(createGridItem(dateStr, 'schedule-header'));
+            function initializeBookings() {
+                labs.forEach(lab => {
+                    bookings[lab] = {};
+                });
+                updateScheduleGrid(); // Atualiza a grade na inicialização
             }
 
-            timeSlots.forEach(slot => {
-                grid.appendChild(createGridItem(slot, 'schedule-header'));
+            function updateSchedule() {
+                currentWeekStart = new Date(document.getElementById('weekStart').value);
+                updateScheduleGrid();
+            }
+
+            function updateScheduleGrid() {
+                const grid = document.getElementById('scheduleGrid');
+                grid.innerHTML = '';
+                grid.appendChild(createGridItem('Horário', 'schedule-header'));
+                
                 for (let i = 0; i < 5; i++) {
                     const date = new Date(currentWeekStart);
                     date.setDate(date.getDate() + i);
-                    const dateKey = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
-                    
-                    const booking = bookings[currentLab][dateKey]?.[slot];
-                    const item = createGridItem(booking ? `${booking.teacherName}<br>${booking.discipline}<br>${booking.className}` : 'Disponível', 'schedule-item');
-                    item.addEventListener('click', () => showBookingForm(dateKey, slot));
-                    grid.appendChild(item);
+                    const dateStr = `${days[i]}<br>${date.getDate()}/${date.getMonth() + 1}`;
+                    grid.appendChild(createGridItem(dateStr, 'schedule-header'));
+                }
+
+                timeSlots.forEach(slot => {
+                    grid.appendChild(createGridItem(slot, 'schedule-header'));
+                    for (let i = 0; i < 5; i++) {
+                        const date = new Date(currentWeekStart);
+                        date.setDate(date.getDate() + i);
+                        const dateKey = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+                        
+                        const booking = bookings[currentLab][dateKey]?.[slot];
+                        const item = createGridItem(booking ? `${booking.teacherName}<br>${booking.discipline}<br>${booking.className}` : 'Disponível', 'schedule-item');
+                        item.addEventListener('click', () => showBookingForm(dateKey, slot));
+                        grid.appendChild(item);
+                    }
+                });
+            }
+
+            function createGridItem(content, className) {
+                const div = document.createElement('div');
+                div.className = className;
+                div.innerHTML = content;
+                return div;
+            }
+
+            function showBookingForm(dateKey, slot) {
+                const form = document.getElementById('bookingForm');
+                form.style.display = 'block';
+                form.dataset.dateKey = dateKey; 
+                form.dataset.slot = slot; 
+            }
+
+            function switchLab(lab) {
+                currentLab = lab;
+                updateScheduleGrid();
+            }
+
+            document.querySelectorAll('.lab-button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    switchLab(e.target.dataset.lab);
+                });
+            });
+
+            document.getElementById('weekStart').addEventListener('change', updateSchedule);
+
+            document.getElementById('confirmBooking').addEventListener('click', () => {
+                const teacherName = document.getElementById('teacherName').value;
+                const discipline = document.getElementById('discipline').value;
+                const className = document.getElementById('className').value;
+                const activityType = document.getElementById('activityType').value;
+                const dateKey = document.getElementById('bookingForm').dataset.dateKey;
+                const slot = document.getElementById('bookingForm').dataset.slot;
+
+                if (teacherName && discipline && className && activityType) {
+                    if (!bookings[currentLab][dateKey]) {
+                        bookings[currentLab][dateKey] = {};
+                    }
+                    bookings[currentLab][dateKey][slot] = {
+                        teacherName,
+                        discipline,
+                        className,
+                        activityType
+                    };
+                    updateScheduleGrid();
+                    document.getElementById('bookingForm').style.display = 'none';
                 }
             });
-        }
 
-        function createGridItem(content, className) {
-            const div = document.createElement('div');
-            div.className = className;
-            div.innerHTML = content;
-            return div;
-        }
-
-        function showBookingForm(dateKey, slot) {
-            const form = document.getElementById('bookingForm');
-            form.style.display = 'block';
-            form.dataset.dateKey = dateKey; 
-            form.dataset.slot = slot; 
-        }
-
-        function switchLab(lab) {
-            currentLab = lab;
-            updateScheduleGrid();
-        }
-
-        document.querySelectorAll('.lab-button').forEach(button => {
-            button.addEventListener('click', (e) => {
-                switchLab(e.target.dataset.lab);
-            });
+            initializeBookings();
         });
+    </script>
+</body>
+</html>
 
-        document.getElementById('confirmBooking').addEventListener('click', () => {
-            const teacherName = document.getElementById('teacherName').value;
-            const discipline = document.getElementById('discipline').value;
-            const className = document.getElementById('className').value;
-            const activityType = document.getElementById('activityType').value;
-            const dateKey = document.getElementById('bookingForm').dataset.dateKey;
-            const slot = document.getElementById('bookingForm').dataset.slot;
-
-            if (teacherName && discipline && className && activityType)
